@@ -106,7 +106,6 @@ h2{font-family:var(--f-display);font-weight:600;font-size:21px;margin:0}
 .pill{display:inline-block;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:600}
 .pill.old{background:var(--warn-soft);color:var(--warn)}
 .pill.none{background:var(--accent-soft);color:var(--accent)}
-.pill.local{background:var(--accent-soft);color:var(--accent)}
 .spark{display:block}
 .na{font-size:15px;color:var(--muted);font-family:var(--f-body);font-weight:500}
 
@@ -138,9 +137,6 @@ tr.grp th{background:var(--bg);font-family:var(--f-display);font-size:13px;color
 .note{font-size:13px;color:var(--muted);max-width:65ch}
 
 .actions{display:flex;gap:8px;flex-wrap:wrap}
-.ed3{display:grid;grid-template-columns:minmax(0,1fr) 90px 90px;gap:8px;align-items:center;font-size:14px}
-.ed3 input{width:100%;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:6px 8px;font-size:14px;text-align:right;font-family:var(--f-display)}
-.ed3.h{font-size:12px;color:var(--muted)}
 /* install */
 .steps{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:10px;font-size:15px}
 .steps b{font-family:var(--f-display)}
@@ -173,17 +169,11 @@ tr.grp th{background:var(--bg);font-family:var(--f-display);font-size:13px;color
 .lightbox{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
 .lightbox img{max-width:100%;max-height:100%;object-fit:contain;border-radius:6px}
 .lightbox .close{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.15);color:#fff;font-size:22px}
-/* edit sheet */
+/* bottom sheet (วิธีติดตั้ง) */
 .sheet{position:fixed;inset:0;z-index:20;background:color-mix(in srgb,#000 45%,transparent);display:flex;justify-content:center;align-items:flex-end}
 .sheet .panel{background:var(--bg);width:100%;max-width:720px;max-height:92%;border-radius:16px 16px 0 0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
 .panel-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
 .panel-b{overflow-y:auto;padding:12px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
-.ed{display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:8px;align-items:center;font-size:14px}
-.ed .s{font-size:12px;color:var(--muted)}
-.ed input{text-align:right;font-family:var(--f-display)}
-.ed-g h3{font-family:var(--f-display);font-size:15px;margin:4px 0 6px;color:var(--accent)}
-.ed-g{display:flex;flex-direction:column;gap:7px}
-textarea{width:100%;min-height:120px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px;font-family:ui-monospace,monospace;font-size:12px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:14px;z-index:30}
 
 .sources{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
@@ -205,7 +195,6 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--line);paddin
       </div>
       <div class="actions">
         <button class="btn gold" id="installBtn" type="button">⤓ ติดตั้งแอพ</button>
-        <button class="btn ghost" id="openEdit" type="button">✎ อัปเดตราคา</button>
       </div>
     </div>
     <div class="tiles" id="tiles"></div>
@@ -233,18 +222,6 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--line);paddin
   <div class="wrap" id="main"></div>
 </main>
 
-<div class="sheet" id="sheet" hidden>
-  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="edTitle">
-    <div class="panel-h">
-      <strong id="edTitle" style="font-family:var(--f-display);font-size:18px">อัปเดตราคา</strong>
-      <div class="actions">
-        <button class="btn" type="button" id="edCancel">ปิด</button>
-        <button class="btn gold" type="button" id="edSave">บันทึก</button>
-      </div>
-    </div>
-    <div class="panel-b" id="edBody"></div>
-  </div>
-</div>
 <div class="toast" id="toast" hidden></div>
 <div class="sheet" id="inst" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="instTitle">
@@ -365,12 +342,9 @@ const ad=id=>ADS.find(a=>a.id===id);
 function adFig(id){const a=ad(id);if(!a)return"";return`<figure class="ad"><button type="button" data-ad="${a.id}" aria-label="ดูภาพเต็ม ${esc(a.t)}"><img src="${a.src}" width="${a.w}" height="${a.h}" alt="${esc(a.t+" "+a.d)}" loading="lazy"></button><figcaption><span class="adtag">โฆษณา</span><span><b>${esc(a.t)}</b> · ${esc(a.d)}</span></figcaption></figure>`}
 
 /* ---------- state ---------- */
-const LS="kg-livestock-board-v6";
 let D=JSON.parse(JSON.stringify(SEED));
-let fromLocal=false;
-function lsGet(){try{return JSON.parse(localStorage.getItem(LS)||"null")}catch(e){return null}}
-function lsSet(v){try{localStorage.setItem(LS,JSON.stringify(v));return true}catch(e){return false}}
-function lsDel(){try{localStorage.removeItem(LS)}catch(e){}}
+/* ราคาทั้งหมดมาจากระบบอัปเดตอัตโนมัติ (prices.json) เท่านั้น ผู้ใช้แก้ราคาเองไม่ได้ */
+try{for(const k of Object.keys(localStorage))if(k.startsWith("kg-livestock-board"))localStorage.removeItem(k)}catch(e){}
 
 const TH_M=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 function thDate(iso){if(!iso)return"—";const[y,m,d]=iso.split("-").map(Number);return d+" "+TH_M[m-1]+" "+String(y+543).slice(-2)}
@@ -415,7 +389,7 @@ function rowHTML(it){
   return`<div class="row">
     <div style="min-width:0"><div class="name">${esc(it.name)}</div>${it.spec?`<div class="spec">${esc(it.spec)}</div>`:""}</div>
     <div class="right"><span class="price">${fmt(it.price,dp)}</span><span class="unit">${esc(it.unit)}</span>${alt}</div>
-    <div class="foot">${chgHTML(change(it),dp)}${spark(it)}<span>ข้อมูล ${thDate(it.date)}</span>${it.local?'<span class="pill local">แก้ไขเอง</span>':""}<span>${srcLink(it.src)}</span></div>
+    <div class="foot">${chgHTML(change(it),dp)}${spark(it)}<span>ข้อมูล ${thDate(it.date)}</span><span>${srcLink(it.src)}</span></div>
   </div>`;
 }
 
@@ -434,7 +408,7 @@ function renderTiles(){
     let v=x.v,c=x.c;if(x.it){const i=item(x.it);v=i.price;c=change(i)}
     return`<div class="tile"><span class="lbl">${x.l}</span><span class="v">${fmt(v,x.dp)}<small>${x.u}</small></span>${chgHTML(c,x.dp)||'<span class="chg flat">&nbsp;</span>'}</div>`
   }).join("");
-  document.getElementById("meta").textContent=`อัปเดต ${thDate(D.updated)} by VET VISTA · แสดงเฉพาะราคาที่อัปเดตไม่เกิน ${MAX_AGE} วัน${fromLocal?" · มีราคาที่แก้ไขเอง":""}`;
+  document.getElementById("meta").textContent=`อัปเดต ${thDate(D.updated)} by VET VISTA · แสดงเฉพาะราคาที่อัปเดตไม่เกิน ${MAX_AGE} วัน`;
 }
 
 const CATS=[
@@ -473,7 +447,7 @@ function secPig(){
     <div class="tbl-wrap"><table><thead><tr><th>ประเภท</th><th class="n">ราคา</th><th class="n">บวก/ลบ</th><th class="n">เทียบสัปดาห์ก่อน</th></tr></thead><tbody>
     ${pl.map(i=>`<tr><td>${esc(i.name)}<br><span class="sub">${esc(i.spec)}</span></td><td class="n">${fmt(i.price,0)}</td><td class="n" style="font-weight:500;font-size:14px">${i.pm?"±"+fmt(i.pm,0):"—"}</td><td class="n">${chgHTML(change(i),0)}</td></tr>`).join("")}
     </tbody></table></div>
-    <div class="foot" style="font-size:12px;color:var(--muted)"><span>สัปดาห์ที่ ${pl[0].week??"—"} · ประกาศวันจันทร์ ${thDate(pl[0].date)}</span>${pl.some(i=>i.local)?'<span class="pill local">แก้ไขเอง</span>':""}<span>${srcLink("cpffeed")}</span></div>`;
+    <div class="foot" style="font-size:12px;color:var(--muted)"><span>สัปดาห์ที่ ${pl[0].week??"—"} · ประกาศวันจันทร์ ${thDate(pl[0].date)}</span><span>${srcLink("cpffeed")}</span></div>`;
   }
   if(!(regions+plHTML).trim())return"";
   return secWrap("s-pig","สุกร","สุกรขุนประกาศทุกวันพระ · ลูกสุกรทุกวันจันทร์",regions+(regions?adFig("vistashape"):"")+plHTML+(plHTML?adFig("tributyrin"):""));
@@ -539,74 +513,8 @@ document.getElementById("chips").addEventListener("click",e=>{
   try{history.replaceState(null,"","#"+curCat)}catch(err){}
   render();window.scrollTo({top:document.querySelector(".chips").offsetTop,behavior:"smooth"});
 });
-/* ---------- edit sheet ---------- */
-const sheet=document.getElementById("sheet");
+/* ---------- แจ้งเตือนสั้น ---------- */
 function toast(t){const el=document.getElementById("toast");el.textContent=t;el.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>el.hidden=true,2200)}
-function todayISO(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
-let resetArm=false;
-function openEdit(){
-  const g=[["ลูกสุกร ซีพีเอฟ (ประกาศวันจันทร์)",D.items.filter(i=>i.cat==="piglet").map(i=>i.id)],["วัตถุดิบอาหารสัตว์",["corn","rice","bran_ext","bran","cassava","chip","sbm","fm_general","cpo","soyoil","fm_shrimp","fm1_60","fm1_lt","fm2_60","fm2_56"]],["ไก่ · ไข่",["broiler","egg","chick_b","chick_l"]],
-    ["เนื้อสัตว์",D.items.filter(i=>i.cat==="meat").map(i=>i.id)],["กุ้งขาว ขายส่ง (ตัว/กก.)",D.items.filter(i=>i.cat==="shrimp").map(i=>i.id)]];
-  resetArm=false;
-  document.getElementById("edBody").innerHTML=`
-    <div class="ed"><label for="ed-date">วันที่ของราคาที่จะแก้</label><input type="date" id="ed-date" value="${todayISO()}" style="text-align:left"></div>
-    <p class="note" style="margin:0">แก้เฉพาะช่องที่ราคาเปลี่ยน ระบบจะเก็บราคาเดิมไว้คำนวณการเปลี่ยนแปลง ราคาที่แก้จะบันทึกไว้ในเครื่องนี้</p>
-    <div class="ed-g"><h3>สุกรขุนหน้าฟาร์ม (พิมพ์ช่วงได้ เช่น 62-64)</h3>
-      ${D.pig.rows.map((r,ix)=>`<div class="ed"><label for="ed-pig-${ix}">ภาค${esc(r.r)}</label><input id="ed-pig-${ix}" value="${esc(r.cur)}"></div>`).join("")}
-      <div class="ed"><label for="ed-pigweek">รอบประกาศ</label><input id="ed-pigweek" value="${esc(D.pig.week)}" style="text-align:left;font-family:var(--f-body)"></div></div>
-    ${(D.retail?.groups||[]).map((g,gi)=>`<div class="ed-g"><h3>ราคาในห้าง: ${esc(g.g)} (บาท/กก.)</h3>
-      <div class="ed3 h"><span>รายการ</span><span style="text-align:right">แม็คโคร</span><span style="text-align:right">โลตัส</span></div>
-      ${g.rows.map((r,ix)=>`<div class="ed3"><span>${esc(r.cut)}</span><input id="ed-rm-${gi}-${ix}" inputmode="decimal" aria-label="${esc(r.cut)} แม็คโคร" value="${r.makro??""}" placeholder="—"><input id="ed-rl-${gi}-${ix}" inputmode="decimal" aria-label="${esc(r.cut)} โลตัส" value="${r.lotus??""}" placeholder="—"></div>`).join("")}</div>`).join("")}
-    ${g.map(([t,ids])=>`<div class="ed-g"><h3>${t}</h3>${ids.map(id=>{const i=item(id);return`<div class="ed"><label for="ed-${id}">${esc(i.cat==="shrimp"?"กุ้งขาว "+i.name+" ตัว/กก.":i.name)}<br><span class="s">${esc(i.unit)}${i.cat==="fish"&&i.spec?" · "+esc(i.spec):""}</span></label><input id="ed-${id}" inputmode="decimal" value="${i.price??""}" placeholder="—"></div>`}).join("")}</div>`).join("")}
-    <div class="ed-g"><h3>ส่งออก / นำเข้าข้อมูล</h3>
-      <p class="note" style="margin:0">คัดลอก JSON นี้ไปบันทึกเป็นไฟล์ <b>prices.json</b> ไว้โฟลเดอร์เดียวกับหน้าเว็บบน GitHub Pages ทุกคนที่เปิดจะเห็นราคาชุดเดียวกัน หรือวาง JSON ที่มีอยู่แล้วกดนำเข้า</p>
-      <textarea id="ed-json" spellcheck="false">${esc(JSON.stringify(D))}</textarea>
-      <div class="actions"><button class="btn" type="button" id="edCopy">คัดลอก JSON</button><button class="btn" type="button" id="edImport">นำเข้า JSON</button><button class="btn" type="button" id="edReset">ล้างที่แก้ไข กลับเป็นข้อมูลตั้งต้น</button></div>
-    </div>`;
-  sheet.hidden=false;document.body.style.overflow="hidden";
-}
-function closeEdit(){sheet.hidden=true;document.body.style.overflow=""}
-document.getElementById("openEdit").addEventListener("click",openEdit);
-document.getElementById("edCancel").addEventListener("click",closeEdit);
-sheet.addEventListener("click",e=>{if(e.target===sheet)closeEdit()});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!sheet.hidden)closeEdit()});
-
-document.getElementById("edSave").addEventListener("click",()=>{
-  const date=document.getElementById("ed-date").value||todayISO();let n=0;
-  D.items.forEach(i=>{
-    const el=document.getElementById("ed-"+i.id);if(!el)return;const raw=el.value.trim();
-    const v=raw===""?null:parseFloat(raw.replace(/,/g,""));if(raw!==""&&isNaN(v))return;
-    if(v!==i.price){
-      if(i.price!=null&&(!i.hist||!i.hist.length))i.hist=[[i.date||date,i.price]];
-      i.hist=(i.hist||[]).filter(p=>p[0]!==date);if(v!=null)i.hist.push([date,v]);
-      i.price=v;i.date=v==null?null:date;i.local=true;i.src=i.src||"แก้ไขเอง";n++;
-    }
-  });
-  let pigChanged=false;
-  D.pig.rows.forEach((r,ix)=>{const v=document.getElementById("ed-pig-"+ix).value.trim();if(v!==r.cur)pigChanged=true});
-  if(pigChanged){D.pig.rows.forEach((r,ix)=>{r.prev=r.cur;r.cur=document.getElementById("ed-pig-"+ix).value.trim()});D.pig.prevDate=D.pig.date;D.pig.date=date;n++}
-  const wk=document.getElementById("ed-pigweek").value.trim();if(wk&&wk!==D.pig.week){D.pig.week=wk;n++}
-  let rtChanged=false;const num=id=>{const el=document.getElementById(id);if(!el)return undefined;const t=el.value.trim().replace(/,/g,"");return t===""?null:(isNaN(+t)?undefined:+t)};
-  (D.retail?.groups||[]).forEach((g,gi)=>g.rows.forEach((r,ix)=>{
-    const m=num(`ed-rm-${gi}-${ix}`),l=num(`ed-rl-${gi}-${ix}`);
-    if(m!==undefined&&m!==r.makro){r.pmakro=r.makro;r.makro=m;r.md=date;rtChanged=true}
-    if(l!==undefined&&l!==r.lotus){r.plotus=r.lotus;r.lotus=l;r.ld=date;rtChanged=true}
-  }));
-  if(rtChanged){D.retail.date=date;n++}
-  if(n){D.updated=date>D.updated?date:D.updated;fromLocal=true;const ok=lsSet(D);toast(ok?`บันทึกแล้ว ${n} รายการ`:`อัปเดตแล้ว ${n} รายการ (เบราว์เซอร์นี้เก็บถาวรไม่ได้ ให้คัดลอก JSON ไว้)`)}
-  else toast("ยังไม่มีราคาที่เปลี่ยน");
-  closeEdit();render();
-});
-document.getElementById("edBody").addEventListener("click",e=>{
-  if(e.target.id==="edCopy"){const ta=document.getElementById("ed-json");
-    navigator.clipboard?.writeText(ta.value).then(()=>toast("คัดลอก JSON แล้ว")).catch(()=>{ta.select();toast("เลือกข้อความแล้ว กดคัดลอกเองได้")})
-    ?? (ta.select(),toast("เลือกข้อความแล้ว กดคัดลอกเองได้"));}
-  if(e.target.id==="edImport"){try{const j=JSON.parse(document.getElementById("ed-json").value);if(!j.items||!j.pig)throw 0;if(!j.retail)j.retail=JSON.parse(JSON.stringify(SEED.retail));D=j;fromLocal=true;lsSet(D);closeEdit();render();toast("นำเข้าข้อมูลแล้ว")}catch(err){toast("JSON ไม่ถูกรูปแบบ ตรวจว่ามี items และ pig")}}
-  if(e.target.id==="edReset"){
-    if(!resetArm){resetArm=true;e.target.textContent="กดอีกครั้งเพื่อยืนยันการล้าง";return}
-    lsDel();D=JSON.parse(JSON.stringify(SEED));fromLocal=false;closeEdit();render();toast("กลับเป็นข้อมูลตั้งต้นแล้ว");
-  }
-});
 
 /* ---------- carousel + lightbox ---------- */
 (function(){
@@ -660,14 +568,12 @@ document.getElementById("edBody").addEventListener("click",e=>{
   try{if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}
 })();
 
-/* ---------- boot: prices.json (GitHub Pages) > ข้อมูลในเครื่อง > ข้อมูลตั้งต้น ---------- */
+/* ---------- boot: prices.json จากระบบอัปเดตอัตโนมัติ > ข้อมูลตั้งต้นในไฟล์ ---------- */
 (function boot(){
-  const loc=lsGet();
-  if(loc&&loc.items&&loc.updated>=SEED.updated){D=loc;fromLocal=true}
   render();
   if(location.protocol.startsWith("http")){
     fetch("prices.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
-      if(j&&j.items&&j.pig&&(!fromLocal||j.updated>D.updated)){D=j;fromLocal=false;render()}
+      if(j&&Array.isArray(j.items)&&j.pig&&j.retail&&(j.updated||"")>=(D.updated||"")){D=j;render()}
     }).catch(()=>{});
   }
 })();

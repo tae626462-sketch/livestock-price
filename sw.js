@@ -1,5 +1,5 @@
 /* VET VISTA — กระดานราคาปศุสัตว์ : เปิดได้แม้ออฟไลน์ ดึงหน้าใหม่ก่อนเสมอเพื่อให้ราคาเป็นปัจจุบัน */
-const CACHE = "vv-price-v2";
+const CACHE = "vv-price-v3";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
