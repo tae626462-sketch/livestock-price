@@ -548,7 +548,7 @@ function render(){
   if(!body)body=`<p class="note">ยังไม่มีราคาที่อัปเดตภายใน ${MAX_AGE} วันในหมวดนี้ กดปุ่ม ✎ อัปเดตราคา เพื่อกรอกราคาใหม่</p>`;
   const srcs=`<section><div class="sec-h"><h2 style="font-size:17px">แหล่งข้อมูล</h2></div><div class="sources">${Object.values(SRC).map(s=>`<a href="${s.u}" target="_blank" rel="noopener">${esc(s.t)}</a>`).join("")}</div></section>`;
   document.getElementById("main").innerHTML=body+(curCat==="all"?srcs:"")+
-    `<footer>แสดงเฉพาะราคาที่อัปเดตไม่เกิน ${MAX_AGE} วัน รายการที่ไม่มีราคาใหม่จะซ่อนไว้จนกว่าจะอัปเดต · ราคาซื้อขายจริงแต่ละพื้นที่อาจต่างกัน<div class="credit">อัปเดต by <img src="${document.querySelector('.brand').src}" alt="VET VISTA"></div></footer>`;
+    `<footer>แสดงเฉพาะราคาที่อัปเดตไม่เกิน ${MAX_AGE} วัน รายการที่ไม่มีราคาใหม่จะซ่อนไว้จนกว่าจะอัปเดต · ราคาซื้อขายจริงแต่ละพื้นที่อาจต่างกัน · แอพนี้ใช้ Google Analytics นับสถิติการใช้งานแบบไม่ระบุตัวตน<div class="credit">อัปเดต by <img src="${document.querySelector('.brand').src}" alt="VET VISTA"></div></footer>`;
 }
 
 document.getElementById("chips").addEventListener("click",e=>{
@@ -583,6 +583,35 @@ function toast(t){const el=document.getElementById("toast");el.textContent=t;el.
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!lb.hidden)closeLb()});
 })();
 
+/* ---------- สถิติผู้ใช้ (Google Analytics 4) — ทำงานเฉพาะบน GitHub Pages, ไม่แสดงอะไรในแอพ ---------- */
+const GA_ID="G-N9DB1VGCT6";
+const GA_ON=(()=>{try{return /github\.io$/.test(location.hostname)}catch(e){return false}})();
+window.dataLayer=window.dataLayer||[];
+function gtag(){window.dataLayer.push(arguments)}
+if(GA_ON){
+  const sc=document.createElement("script");sc.async=true;sc.src="https://www.googletagmanager.com/gtag/js?id="+GA_ID;document.head.appendChild(sc);
+  gtag("js",new Date());
+}
+const PATH_EVENT={"/app-open":"app_open","/installed-device":"installed_device","/install-android":"install_success","/install-click":"install_click","/share-click":"share_click"};
+function track(path,title,isEvent){
+  try{
+    if(!GA_ON)return;
+    if(isEvent){gtag("event",PATH_EVENT[path]||path.replace(/\W+/g,"_"),{event_label:title,open_via:window.__vvVia||""});}
+  }catch(e){}
+}
+(function(){
+  const sa=(()=>{try{return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}catch(e){return false}})();
+  const ua=navigator.userAgent||"";
+  const where=/FBAN|FBAV|FB_IAB|FB4A/i.test(ua)?"Facebook":/Line\//i.test(ua)?"LINE":/Instagram/i.test(ua)?"Instagram":"เบราว์เซอร์";
+  window.__vvVia=sa?"ไอคอนแอพ":where;
+  if(GA_ON)gtag("config",GA_ID,{page_title:sa?"ราคาปศุสัตว์ (แอพที่ติดตั้ง)":"ราคาปศุสัตว์ (เปิดผ่าน"+where+")",open_via:window.__vvVia});
+  if(sa){
+    track("/app-open","เปิดจากไอคอนแอพ (ผู้ติดตั้ง)",true);
+    let first=false;try{if(!localStorage.getItem("vv-installed")){localStorage.setItem("vv-installed",new Date().toISOString());first=true}}catch(e){}
+    if(first)track("/installed-device","ติดตั้งแล้ว (นับ 1 ครั้งต่อเครื่อง)",true);
+  }
+})();
+
 /* ---------- แชร์แอพ ---------- */
 const APP_URL_DEFAULT="https://tae626462-sketch.github.io/livestock-price/";
 const APP_URL=(()=>{try{if(/github\.io$/.test(location.hostname))return location.origin+location.pathname.replace(/index\.html$/,"")}catch(e){}return APP_URL_DEFAULT})();
@@ -613,6 +642,7 @@ by VET VISTA`;
     catch(e){if(el&&el.select){el.select();toast("เลือกข้อความแล้ว กดคัดลอกได้เลย")}else{const r=document.createRange();r.selectNodeContents(document.getElementById("shrText"));const s=getSelection();s.removeAllRanges();s.addRange(r);toast("เลือกข้อความแล้ว กดคัดลอกได้เลย")}}
   }
   document.getElementById("shareBtn").addEventListener("click",async()=>{
+    track("/share-click","กดปุ่มแชร์แอพ",true);
     if(navigator.share&&/github\.io$/.test(location.hostname)){
       try{await navigator.share({title:"ราคาปศุสัตว์ by VET VISTA",text:INVITE.replace(/\n👉[^\n]*/,""),url:INSTALL_URL});return}catch(e){if(e&&e.name==="AbortError")return}
     }
@@ -644,7 +674,7 @@ by VET VISTA`;
   if(standalone())btn.hidden=true;
   if(inApp&&(isAndroid||isLINE))btn.textContent="⤓ เปิดใน Chrome เพื่อติดตั้ง";
   window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e;btn.hidden=false});
-  window.addEventListener("appinstalled",()=>{btn.hidden=true;deferred=null;toast("ติดตั้งแอพแล้ว เปิดได้จากหน้าจอโฮม")});
+  window.addEventListener("appinstalled",()=>{track("/install-android","ติดตั้งสำเร็จ (Android/คอมพิวเตอร์)",true);btn.hidden=true;deferred=null;toast("ติดตั้งแอพแล้ว เปิดได้จากหน้าจอโฮม")});
   const icon=document.querySelector(".brand")?.src||"";
   function steps(){
     const now=deferred?`<button class="btn gold" type="button" id="instNow" style="align-self:flex-start;font-size:16px;padding:10px 20px">⤓ ติดตั้งเลย</button>`:"";
@@ -656,6 +686,7 @@ by VET VISTA`;
     return head+`<ol class="steps"><li>เปิดหน้านี้ใน <b>Chrome</b></li><li>กดเมนู <span class="kbd">⋮</span> มุมขวาบน</li><li>เลือก <b>ติดตั้งแอป</b> หรือ <b>เพิ่มลงในหน้าจอหลัก</b></li><li>กด <b>ติดตั้ง</b> ไอคอนราคาปศุสัตว์จะขึ้นบนหน้าจอ</li></ol>`;
   }
   btn.addEventListener("click",async()=>{
+    track("/install-click","กดปุ่มติดตั้งแอพ",true);
     if(inApp&&(isAndroid||isLINE)){openExternal();setTimeout(()=>{body.innerHTML=steps();sh.hidden=false},700);return}
     if(deferred){try{deferred.prompt();const r=await deferred.userChoice;if(r&&r.outcome==="accepted")btn.hidden=true}catch(e){}deferred=null;return}
     body.innerHTML=steps();sh.hidden=false;

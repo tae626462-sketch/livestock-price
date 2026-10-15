@@ -1,5 +1,5 @@
 /* VET VISTA — กระดานราคาปศุสัตว์ : เปิดได้แม้ออฟไลน์ ดึงหน้าใหม่ก่อนเสมอเพื่อให้ราคาเป็นปัจจุบัน */
-const CACHE = "vv-price-v10";
+const CACHE = "vv-price-v12";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
@@ -18,8 +18,8 @@ self.addEventListener("fetch", e => {
       if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
       return res;
     }).catch(() => caches.match(req).then(r => r || caches.match("./index.html"))));
-  } else {
-    // ฟอนต์ Google: ใช้ของที่เก็บไว้ก่อน
+  } else if (/fonts\.(googleapis|gstatic)\.com$/.test(new URL(req.url).hostname)) {
+    // ฟอนต์ Google: ใช้ของที่เก็บไว้ก่อน (ลิงก์อื่น เช่น ตัวนับสถิติ ไม่เก็บ)
     e.respondWith(caches.match(req).then(r => r || fetch(req).then(res => {
       const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); return res;
     })));
