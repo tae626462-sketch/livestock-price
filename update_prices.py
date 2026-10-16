@@ -338,9 +338,9 @@ def update_cassava(data):
         return 0
     best = max(heads, key=lambda m: th_date(*m.groups()))
     date = th_date(*best.groups())
-    after = t[best.end():]
-    nxt = re.search(r"ราคารับซื้อหัวมันสด", after)
-    block = after[: nxt.start() if nxt else 3000]
+    # ตัดช่วงข้อความตั้งแต่หัวข้อวันที่ล่าสุด ถึงหัวข้อ "ที่มีวันที่" ถัดไป (หัวตารางที่ไม่มีวันที่ไม่นับ)
+    later = [m.start() for m in heads if m.start() > best.start()]
+    block = t[best.end(): later[0] if later else best.end() + 4000]
     toks = re.findall(r"(\d\.\d{2})(?:\s*-\s*(\d\.\d{2}))?", block)
     vals = [(float(a), float(b) if b else float(a)) for a, b in toks]
     pct25 = vals[1::2]          # คอลัมน์ 30% , 25% สลับกัน
