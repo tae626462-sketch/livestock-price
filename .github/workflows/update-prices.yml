@@ -1,0 +1,47 @@
+name: อัปเดตราคาอัตโนมัติ
+
+on:
+  schedule:
+    # ทุกวัน 07:00 09:00 11:00 14:00 16:00 น. เวลาไทย (GitHub ใช้เวลา UTC = ไทย − 7 ชม.)
+    - cron: "0 0,2,4,7,9 * * *"
+  workflow_dispatch: {}   # กดรันเองได้ที่แท็บ Actions
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-prices
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: ติดตั้งเครื่องมือ
+        run: pip install requests==2.32.3 beautifulsoup4==4.12.3
+
+      - name: ดึงราคาล่าสุด
+        run: |
+          # รองรับทั้งกรณีไฟล์อยู่ในโฟลเดอร์ scripts/ หรืออยู่หน้าแรกของ repo
+          mkdir -p scripts
+          [ -f scripts/update_prices.py ] || cp update_prices.py scripts/update_prices.py
+          python scripts/update_prices.py
+
+      - name: บันทึก prices.json
+        run: |
+          git config user.name "vetvista-price-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add prices.json
+          if git diff --staged --quiet; then
+            echo "ไม่มีการเปลี่ยนแปลง"
+          else
+            git commit -m "อัปเดตราคา $(TZ=Asia/Bangkok date +'%Y-%m-%d %H:%M')"
+            git push
+          fi
