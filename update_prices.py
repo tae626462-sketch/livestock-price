@@ -199,65 +199,94 @@ def update_cpffeed(data):
 
 
 # ---------------------------------------------------------------- 2) สุกรขุนรายภาค (สมาคมผู้เลี้ยงสุกร ผ่าน pasusart.com) — ทุกวันพระ
-REGIONS = [
-    ("ตะวันตก", r"(?:ภาค)?ตะวันตก"),
-    ("ตะวันออก", r"(?:ภาค)?ตะวันออก(?!เฉียง)"),
-    ("อีสาน", r"(?:ภาค)?(?:อีสาน|ตะวันออกเฉียงเหนือ)"),
-    ("เหนือ", r"(?:ภาค)?(?<!เฉียง)เหนือ"),
-    ("ใต้", r"(?:ภาค)?ใต้"),
+REGIONS = [   # ต้องขึ้นต้นบรรทัด เพื่อไม่ไปจับคำว่า "ภาค..." ในย่อหน้าข่าว
+    ("ตะวันตก", r"^[ \t]*(?:ภาค)?ตะวันตก"),
+    ("ตะวันออก", r"^[ \t]*(?:ภาค)?ตะวันออก(?!เฉียง)"),
+    ("อีสาน", r"^[ \t]*(?:ภาค)?(?:อีสาน|ตะวันออกเฉียงเหนือ)"),
+    ("เหนือ", r"^[ \t]*(?:ภาค)?เหนือ"),
+    ("ใต้", r"^[ \t]*(?:ภาค)?ใต้"),
 ]
-VAL = r"\s*[:：\-–|]*\s*(\d{2,3}(?:\.\d+)?(?:\s*[-–]\s*\d{2,3}(?:\.\d+)?)?|[^\n|]{0,12}?ยืน[^\n|]{0,8}|[^\n|]{0,6}(?:ขึ้น|ลง)\s*\d+\s*บาท)"
+# ค่าที่รองรับ: 64-66 | 68 | ยืนราคา/รอยืนราคา | ขึ้น 2 บาท | ลง 2 บาท | +4 บาท | -2 บาท | บวก 4 | ลบ 2
+VAL = r"\s*[:：|]*\s*((?:[+\-−–]|ขึ้น|ลง|บวก|ลบ)\s*\d+(?:\.\d+)?\s*(?:บาท)?|\d{2,3}(?:\.\d+)?(?:\s*[-–]\s*\d{2,3}(?:\.\d+)?)?|[^\n|]{0,12}?ยืน[^\n|]{0,8})"
+PIG_DATE = rf"(?:วัน)?พระ(?:ที่)?\s*(\d{{1,2}})\s*({MONTH_RE})\s*(\d{{4}})|(?:วัน)?จันทร์(?:ที่)?\s*(\d{{1,2}})\s*({MONTH_RE})\s*(\d{{4}})"
+
+
+def pig_date_of(text):
+    m = re.search(PIG_DATE, text or "")
+    if not m:
+        return None
+    g = [x for x in m.groups() if x]
+    try:
+        return th_date(*g[:3])
+    except Exception:
+        return None
 
 
 def update_pig(data):
+    pig = data["pig"]
+    # แก้ข้อมูลรอบ 11 ต.ค. ที่เคยถูกบันทึกเป็นวันที่ 18 ต.ค. ผิด (แก้ครั้งเดียว)
+    if pig.get("date") == "2026-10-18" and str(pig.get("week", "")).startswith("สัปดาห์ที่ 41/2569"):
+        pig["date"], pig["prevDate"] = "2026-10-11", "2026-10-04"
+        pig["week"] = "สัปดาห์ที่ 41/2569 (วันพระ 11 ต.ค.)"
+
     html, text = fetch("https://pasusart.com/")
-    url = None
+    cands = []   # (วันที่จากชื่อโพสต์, url)
     if html:
         soup = BeautifulSoup(html, "html.parser")
         for a in soup.find_all("a", href=True):
             tx = a.get_text(" ", strip=True)
-            if "สุกรมีชีวิตหน้าฟาร์ม" in tx and re.search(r"\d", tx):
-                url = a["href"]
-                break
-    if not url and text:
-        m = re.search(r"\((https?://pasusart\.com/[^)\s]*)\)", text)
-        url = m.group(1) if m else None
-    if not url:
+            if "สุกรมีชีวิตหน้าฟาร์ม" in tx:
+                d = pig_date_of(tx)
+                if d:
+                    cands.append((d, a["href"]))
+    if not cands and text:
+        for m in re.finditer(r"\[([^\]]*สุกรมีชีวิตหน้าฟาร์ม[^\]]*)\]\((https?://pasusart\.com/[^)\s]*)\)", text):
+            d = pig_date_of(m.group(1))
+            if d:
+                cands.append((d, m.group(2)))
+    cands = [c for c in cands if c[0] <= TODAY.isoformat()]
+    if not cands:
         status["pig"] = {"ok": False, "why": "ไม่พบโพสต์ราคาสุกร", "at": TODAY.isoformat()}
         return 0
-    _, t = fetch(url)
-    dates = find_th_dates(t[:3000]) or find_th_dates(t)
-    if not dates:
-        status["pig"] = {"ok": False, "why": "ไม่พบวันที่", "url": url}
-        return 0
-    date = max(d for d in dates if d <= TODAY.isoformat()) if any(d <= TODAY.isoformat() for d in dates) else dates[0]
-    pig = data["pig"]
+    date, url = max(cands)                     # โพสต์ที่วันที่ล่าสุด
     if pig.get("date") and date <= pig["date"]:
         status["pig"] = {"ok": True, "note": "ยังไม่มีรอบใหม่", "latest": date, "at": TODAY.isoformat()}
         return 0
+    _, t = fetch(url)
+    d2 = pig_date_of(t[:4000])
+    if d2 and d2 != date:
+        status["pig"] = {"ok": False, "why": f"วันที่ในโพสต์ไม่ตรงกัน ({d2} / {date})", "url": url}
+        return 0
     old = {r["r"]: r["cur"] for r in pig["rows"]}
     st = t.find("สัปดาห์ที่")
-    seg = t[st: st + 3000] if st >= 0 else t
+    seg = t[st: st + 4000] if st >= 0 else t
     new = {}
     for name, rx in REGIONS:
-        m = re.search(rx + VAL, seg)
+        m = re.search(rx + VAL, seg, re.M)
         if not m:
             continue
         v = m.group(1).strip()
-        if re.search(r"\d{2}", v) and "บาท" not in v:
+        mm = re.match(r"(\+|-|−|–|ขึ้น|ลง|บวก|ลบ)\s*(\d+(?:\.\d+)?)", v)
+        if mm:                                   # ปรับจากฐานเดิม เช่น +4 บาท / ขึ้น 2 บาท
+            sign = 1 if mm.group(1) in ("+", "ขึ้น", "บวก") else -1
+            delta = float(mm.group(2)) * sign
+            pr = re.match(r"(\d+(?:\.\d+)?)(?:-(\d+(?:\.\d+)?))?$", old.get(name, "") or "")
+            if not pr:
+                continue                         # ไม่มีฐานเดิม → ไม่เดา
+            lo = float(pr.group(1)) + delta
+            hi = float(pr.group(2)) + delta if pr.group(2) else None
+            new[name] = f"{lo:g}-{hi:g}" if hi else f"{lo:g}"
+        elif re.match(r"\d{2}", v):
             new[name] = re.sub(r"\s*[-–]\s*", "-", v)
-        else:
+        else:                                    # ยืนราคา → ใช้ตัวเลขเดิม
             prev = old.get(name, "")
-            mm = re.search(r"(ขึ้น|ลง)\s*(\d+)", v)
-            pr = re.match(r"(\d+(?:\.\d+)?)(?:-(\d+(?:\.\d+)?))?$", prev or "")
-            if mm and pr:   # "ขึ้น 2 บาท" จากฐานเดิม
-                d = float(mm.group(2)) * (1 if mm.group(1) == "ขึ้น" else -1)
-                lo = float(pr.group(1)) + d
-                hi = float(pr.group(2)) + d if pr.group(2) else None
-                new[name] = f"{lo:g}-{hi:g}" if hi else f"{lo:g}"
-            else:          # ยืนราคา → ใช้ตัวเลขเดิม
-                new[name] = prev if re.search(r"\d", prev or "") else "ยืนราคา"
-    if len(new) < 3:
+            new[name] = prev if re.search(r"\d", prev or "") else "ยืนราคา"
+    # ตรวจความสมเหตุสมผล: 30–150 บาท/กก.
+    for k, v in list(new.items()):
+        nums = [float(x) for x in re.findall(r"\d+(?:\.\d+)?", v)]
+        if nums and not all(30 <= x <= 150 for x in nums):
+            new.pop(k)
+    if len(new) < 4:
         status["pig"] = {"ok": False, "why": "อ่านราคาได้ไม่ครบ", "url": url, "got": new}
         return 0
     wk = re.search(r"สัปดาห์ที่\s*(\d+)\s*/\s*(\d{4})", t)
@@ -269,7 +298,7 @@ def update_pig(data):
     pig["week"] = (f"สัปดาห์ที่ {wk.group(1)}/{wk.group(2)} " if wk else "") + f"(วันพระ {d.day} {list(TH_MONTHS)[d.month + 11]})"
     pig["src"] = "pig_auto"
     pig["url"] = url
-    status["pig"] = {"ok": True, "date": date, "url": url, "at": TODAY.isoformat()}
+    status["pig"] = {"ok": True, "date": date, "url": url, "got": new, "at": TODAY.isoformat()}
     return 1
 
 
