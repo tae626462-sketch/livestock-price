@@ -43,11 +43,11 @@
     "rows": [
      {
       "cut": "สะโพก",
-      "makro": 119.0,
+      "makro": 117.0,
       "md": "2026-11-20",
       "lotus": 133.0,
       "ld": "2026-11-20",
-      "pmakro": 117.0,
+      "pmakro": 119.0,
       "plotus": 119.0
      },
      {
@@ -1197,8 +1197,8 @@
   },
   "cpf_weekly": {
    "ok": true,
-   "date": "2026-11-13",
-   "url": "https://www.bangkokbiznews.com/business/1260701",
+   "date": "2026-11-06",
+   "url": "https://www.bangkokbiznews.com/business/1259644",
    "at": "2026-11-20"
   },
   "cassava": {
